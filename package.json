@@ -6,7 +6,8 @@
   "main": "server.ts",
   "scripts": {
     "test": "npm run test",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --loader ts-node/esm server.ts"
   },
   "repository": {
     "type": "git",
