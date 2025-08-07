@@ -37,6 +37,20 @@ app.get('/api/devotionals', (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve devotionals.' });
     }
 });
+app.get('/api/devotionals/:id', (req, res) => {
+    try {
+        const { id } = req.params;
+        const statement = db.prepare('SELECT * FROM devotionals WHERE id = ? AND deleted_at IS NULL');
+        const devotional = statement.get(id);
+        if (!devotional) {
+            return res.status(404).json({ error: 'Devotional not found.' });
+        }
+        res.status(200).json(devotional);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to retrieve the devotional.' });
+    }
+});
 app.post('/api/devotionals', (req, res) => {
     try {
         const { verse, content } = req.body;
