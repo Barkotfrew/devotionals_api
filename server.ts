@@ -8,7 +8,9 @@ import { fileURLToPath } from 'url';
 const app = express();
 const PORT = 3000;
 
-const __filename = fileURLToPath(import.meta.url); 
+app.use(express.json())
+
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, 'devotionals.db');
 
@@ -43,6 +45,28 @@ app.get('/api/devotionals', (req: Request, res: Response) => {
       res.status(500).json({ error: 'Failed to retrieve devotionals.' });
   }
 });
+
+app.post('/api/devotionals', (req: Request, res: Response) => {
+  try{
+    const { verse, content } = req.body;
+
+    if (!verse || !content) {
+      return res.status(400).json({ error: 'Both Verse and content are required' });
+    }
+    const statement = db.prepare('INSERT INTO devotionals (verse ,content) VALUES (? , ?)');
+    const devotionals = statement.run(verse, content);
+
+    res.status(201).json({
+      message: 'Devotional Created Successfully',
+      id: devotionals.lastInsertRowid,
+      verse,
+      content
+    });
+  }
+  catch(error){
+    res.status(500).json({ error: 'Failed to create devotional.' });
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

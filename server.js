@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 const app = express();
 const PORT = 3000;
+app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, 'devotionals.db');
@@ -26,7 +27,7 @@ if (!isDbCreated) {
 app.get('/hello_world', (req, res) => {
     res.send('Hello, World!');
 });
-app.post('/api/devotionals', (req, res) => {
+app.get('/api/devotionals', (req, res) => {
     try {
         const statement = db.prepare('SELECT * FROM devotionals WHERE deleted_at IS NULL ORDER BY created_at DESC');
         const devotionals = statement.all();
@@ -34,6 +35,25 @@ app.post('/api/devotionals', (req, res) => {
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to retrieve devotionals.' });
+    }
+});
+app.post('/api/devotionals', (req, res) => {
+    try {
+        const { verse, content } = req.body;
+        if (!verse || !content) {
+            return res.status(400).json({ error: 'Both Verse and content are required' });
+        }
+        const statement = db.prepare('INSERT INTO devotionals (verse ,content) VALUES (? , ?)');
+        const devotionals = statement.run(verse, content);
+        res.status(201).json({
+            message: 'Devotional Created Successfully',
+            id: devotionals.lastInsertRowid,
+            verse,
+            content
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to create devotional.' });
     }
 });
 app.listen(PORT, () => {
