@@ -114,26 +114,16 @@ app.patch('/api/devotionals/:id', (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update devotionals.' });
   }
 })
-
 app.delete('/api/devotionals/:id', (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const statement = db.prepare(
-      "UPDATE devotionals SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL"
-    );
-    const devotional = statement.run(id);
-
-    if (devotional.changes === 0) {
-      return res.status(404).json({ error: 'Devotional not found or already deleted.' });
-    }
-
-    res.status(204).send(); 
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete devotional.' });
+  try{
+    const statement = db.prepare('UPDATE devotionals WHERE id = ?, deleted_at IS NULL');
+    const devotionals = statement
+    res.status(204).json(devotionals)
   }
-});
-
+  catch(error){
+    res.status(500).json({ error: 'Failed to delete devotionals.' });
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
