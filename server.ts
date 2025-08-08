@@ -93,22 +93,27 @@ app.patch('/api/devotionals/:id', (req: Request, res: Response) => {
 
     const { verse, content } = req.body;
     if (!verse && !content) {
-      return res.status(400).json({ error: 'Atleast "Verse" or "content" is required' });
+      return res.status(400).json({ error: 'Both "Verse" or "content" is required' });
     }
 
+    let devotionals;
     
-    const statement = db.prepare(`UPDATE devotionals SET verse = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL`);
-    const devotionals = statement.run(verse, content, id);
-
-    if(devotionals.changes > 0){
-      res.status(200).json({
-        message: `Devotionals with id ${id} is updated successfully`, 
-        verse, content
-      })
+    if(verse){
+    devotionals = db.prepare(`UPDATE devotionals SET verse = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL`).run(verse, id);
+    }
+    else if(content ){
+     devotionals = db.prepare(`UPDATE devotionals SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL`).run(content, id);
     }else{
-      res.status(404).json({ error: 'Devotional not found or could not be updated.' });
-      }
-  }
+     devotionals = db.prepare(`UPDATE devotionals SET verse =?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL`).run(verse, content, id);}
+    
+  
+    let response = db.prepare(`SELECT * FROM devotionals WHERE id=? AND deleted_at IS NULL`).get(id);
+
+      res.status(200).json({
+        message: `Devotionals with id ${id} is updated successfully`,
+        devotional: response
+      })
+    }
   catch(error){
     console.error('Error updating devotional:', error);
     res.status(500).json({ error: 'Failed to update devotionals.' });
@@ -116,9 +121,17 @@ app.patch('/api/devotionals/:id', (req: Request, res: Response) => {
 })
 app.delete('/api/devotionals/:id', (req: Request, res: Response) => {
   try{
-    const statement = db.prepare('UPDATE devotionals WHERE id = ?, deleted_at IS NULL');
-    const devotionals = statement
-    res.status(204).json(devotionals)
+    const{id} =req.params;
+     if(isNaN(Number(id))){
+      return res.status(400).json( {error: 'Invalid id provided. Id must be a number'})}
+  
+    const statement = db.prepare('UPDATE devotionals SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL');
+    const devotionals = statement.run(Number(id));
+     if(devotionals.changes > 0){
+      res.status(204).send()
+    }else{
+      res.status(404).json({ error: 'Devotional not found or could not be updated.' });
+      }
   }
   catch(error){
     res.status(500).json({ error: 'Failed to delete devotionals.' });
